@@ -7,6 +7,31 @@ CURRENT_YEAR = 2025
 ANNUAL_LIMIT = 23000
 CATCH_UP_LIMIT = 7500
 
+from datetime import datetime
+
+# Risk-adjusted return metrics
+RISK_METRICS = {
+    "Conservative": {
+        "expected_return": 0.04,
+        "volatility": 0.05,
+        "max_drawdown": 0.10
+    },
+    "Moderate": {
+        "expected_return": 0.07,
+        "volatility": 0.12,
+        "max_drawdown": 0.20
+    },
+    "Aggressive": {
+        "expected_return": 0.09,
+        "volatility": 0.18,
+        "max_drawdown": 0.35
+    }
+}
+
+# Historical fund performance data
+HISTORICAL_PERFORMANCE = {
+    # Add historical performance data...
+}
 # Risk-based portfolio allocations
 RISK_PROFILES = {
     'Conservative': {
