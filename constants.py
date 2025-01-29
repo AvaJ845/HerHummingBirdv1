@@ -1,71 +1,14 @@
 #constants.py
-from datetime import datetime
+# Current user and timestamp information
+CURRENT_TIMESTAMP = "2025-01-29 22:40:49"  # Updated with provided timestamp
+CURRENT_USER = "AvaJ845"  # Updated with provided username
 
-CURRENT_TIMESTAMP = "2025-01-29 22:33:05"
-CURRENT_USER = "AvaJ845"
+# TSP Contribution Limits
 CURRENT_YEAR = 2025
 ANNUAL_LIMIT = 23000
 CATCH_UP_LIMIT = 7500
 
-from datetime import datetime
-
-# Risk-adjusted return metrics
-RISK_METRICS = {
-    "Conservative": {
-        "expected_return": 0.04,
-        "volatility": 0.05,
-        "max_drawdown": 0.10
-    },
-    "Moderate": {
-        "expected_return": 0.07,
-        "volatility": 0.12,
-        "max_drawdown": 0.20
-    },
-    "Aggressive": {
-        "expected_return": 0.09,
-        "volatility": 0.18,
-        "max_drawdown": 0.35
-    }
-}
-
-# Historical fund performance data
-HISTORICAL_PERFORMANCE = {
-    # Add historical performance data...
-}
-# Risk-based portfolio allocations
-RISK_PROFILES = {
-    'Conservative': {
-        'description': 'Lower risk, stable returns, suitable for near-retirement',
-        'allocations': {
-            'gFund': 40,
-            'fFund': 25,
-            'cFund': 20,
-            'sFund': 10,
-            'iFund': 5
-        }
-    },
-    'Moderate': {
-        'description': 'Balanced risk and returns, suitable for mid-career',
-        'allocations': {
-            'gFund': 20,
-            'fFund': 20,
-            'cFund': 35,
-            'sFund': 15,
-            'iFund': 10
-        }
-    },
-    'Aggressive': {
-        'description': 'Higher risk, higher potential returns, suitable for early career',
-        'allocations': {
-            'gFund': 5,
-            'fFund': 10,
-            'cFund': 45,
-            'sFund': 25,
-            'iFund': 15
-        }
-    }
-}
-
+# Fund Information and Performance
 FUND_PERFORMANCE = {
     'gFund': {
         'return': 2.35,
@@ -99,7 +42,60 @@ FUND_PERFORMANCE = {
     }
 }
 
-# Historical performance (10-year average returns)
+# Risk Profiles and Allocations
+RISK_PROFILES = {
+    'Conservative': {
+        'description': 'Lower risk, stable returns, suitable for near-retirement',
+        'allocations': {
+            'gFund': 40,
+            'fFund': 25,
+            'cFund': 20,
+            'sFund': 10,
+            'iFund': 5
+        }
+    },
+    'Moderate': {
+        'description': 'Balanced risk and returns, suitable for mid-career',
+        'allocations': {
+            'gFund': 20,
+            'fFund': 20,
+            'cFund': 35,
+            'sFund': 15,
+            'iFund': 10
+        }
+    },
+    'Aggressive': {
+        'description': 'Higher risk, higher potential returns, suitable for early career',
+        'allocations': {
+            'gFund': 5,
+            'fFund': 10,
+            'cFund': 45,
+            'sFund': 25,
+            'iFund': 15
+        }
+    }
+}
+
+# Risk Metrics
+RISK_METRICS = {
+    "Conservative": {
+        "expected_return": 0.04,
+        "volatility": 0.05,
+        "max_drawdown": 0.10
+    },
+    "Moderate": {
+        "expected_return": 0.07,
+        "volatility": 0.12,
+        "max_drawdown": 0.20
+    },
+    "Aggressive": {
+        "expected_return": 0.09,
+        "volatility": 0.18,
+        "max_drawdown": 0.35
+    }
+}
+
+# Historical Performance Data (10-year average returns)
 HISTORICAL_PERFORMANCE = {
     'gFund': [2.1, 2.3, 2.4, 2.35, 2.4, 2.2, 2.3, 2.4, 2.35, 2.35],
     'fFund': [3.2, 3.4, 3.5, 3.3, 3.6, 3.4, 3.5, 3.4, 3.45, 3.45],
@@ -108,7 +104,7 @@ HISTORICAL_PERFORMANCE = {
     'iFund': [6.8, 7.0, 7.2, 7.3, 7.4, 7.1, 7.2, 7.3, 7.26, 7.26]
 }
 
-# RMD Factors
+# Required Minimum Distribution Factors
 RMD_FACTORS = {
     72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9,
     78: 22.0, 79: 21.1, 80: 20.2, 81: 19.4, 82: 18.5, 83: 17.7,
@@ -116,3 +112,14 @@ RMD_FACTORS = {
     90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9,
     96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8, 100: 6.4
 }
+
+# Tax Brackets (2024)
+TAX_BRACKETS = [
+    {'rate': 0.10, 'single': 11600, 'married': 23200},
+    {'rate': 0.12, 'single': 47150, 'married': 94300},
+    {'rate': 0.22, 'single': 100525, 'married': 201050},
+    {'rate': 0.24, 'single': 191950, 'married': 383900},
+    {'rate': 0.32, 'single': 243725, 'married': 487450},
+    {'rate': 0.35, 'single': 609350, 'married': 731200},
+    {'rate': 0.37, 'single': float('inf'), 'married': float('inf')}
+]
