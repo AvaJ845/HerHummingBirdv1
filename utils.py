@@ -1,77 +1,103 @@
 #utils.py
 import streamlit as st
-from typing import Union, Dict
-import re
+import pandas as pd
+import numpy as np
+from typing import Dict
+from constants import RISK_PROFILES, FUND_PERFORMANCE, HISTORICAL_PERFORMANCE, RMD_FACTORS
 
-def mask_sensitive_data(data: str) -> str:
-    """Mask sensitive data while preserving the actual value in session state"""
-    if not data:
-        return ""
-    return re.sub(r'\d', '*', str(data))
+def calculate_portfolio_returns(allocations: Dict, investment_amount: float) -> Dict:
+    """Calculate expected returns based on fund allocations"""
+    total_return = 0
+    portfolio_risk = 0
+    
+    for fund, percentage in allocations.items():
+        if percentage > 0:
+            return_rate = FUND_PERFORMANCE[fund]['return'] / 100
+            total_return += (return_rate * percentage / 100)
+            portfolio_risk += (FUND_PERFORMANCE[fund]['volatility'] * percentage / 100)
+    
+    expected_value = investment_amount * (1 + total_return)
+    
+    return {
+        'expected_return': total_return * 100,
+        'portfolio_risk': portfolio_risk,
+        'expected_value': expected_value
+    }
 
-def validate_inputs(data: Dict) -> tuple[bool, str]:
-    """Validate user inputs"""
-    try:
-        if float(data['age']) < 18:
-            return False, "Age must be at least 18"
-        if float(data['salary']) < 0:
-            return False, "Salary cannot be negative"
-        if float(data['years_of_service']) < 0:
-            return False, "Years of service cannot be negative"
-        return True, ""
-    except ValueError:
-        return False, "Please enter valid numeric values"
-    except Exception as e:
-        return False, f"Validation error: {str(e)}"
+def project_retirement_income(
+    current_balance: float,
+    monthly_contribution: float,
+    years_to_retirement: int,
+    risk_profile: str
+) -> Dict:
+    """Project retirement income based on contributions and risk profile"""
+    allocations = RISK_PROFILES[risk_profile]['allocations']
+    annual_return = sum(FUND_PERFORMANCE[fund]['return'] * (alloc/100) 
+                       for fund, alloc in allocations.items())
+    
+    # Monthly calculations
+    months = years_to_retirement * 12
+    monthly_return = (1 + annual_return/100)**(1/12) - 1
+    
+    # Future Value calculation with monthly contributions
+    future_value = current_balance * (1 + monthly_return)**months
+    future_value += monthly_contribution * (((1 + monthly_return)**months - 1) / monthly_return)
+    
+    # Calculate estimated monthly retirement income (4% rule)
+    monthly_retirement_income = future_value * 0.04 / 12
+    
+    return {
+        'projected_balance': future_value,
+        'monthly_retirement_income': monthly_retirement_income,
+        'annual_return_rate': annual_return
+    }
 
-def calculate_retirement_age(age: int, years_of_service: int, retirement_system: str, is_special_category: bool) -> int:
-    """Calculate retirement age based on provided parameters"""
-    try:
-        if retirement_system == 'FERS':
-            if is_special_category:
-                return min(57, age + (20 - years_of_service))
-            birth_year = 2024 - age  # Using current year
-            if birth_year < 1948:
-                return 55
-            if birth_year > 1969:
-                return 57
-            return 55 + min(2, (birth_year - 1947) * 0.166667)
-        else:  # CSRS
-            if is_special_category:
-                return min(55, age + (20 - years_of_service))
-            return min(62, age + (30 - years_of_service))
-    except Exception as e:
-        st.error(f"Error calculating retirement age: {str(e)}")
-        return 0
+def calculate_detailed_rmd(age: int, traditional_balance: float) -> Dict:
+    """Calculate detailed RMD projections"""
+    if age < 72:
+        years_to_rmd = 72 - age
+        projected_balance = traditional_balance * (1.07 ** years_to_rmd)  # Assuming 7% annual growth
+    else:
+        projected_balance = traditional_balance
+    
+    rmd_projections = {}
+    current_balance = projected_balance
+    
+    for projection_age in range(max(72, age), 101):
+        if projection_age in RMD_FACTORS:
+            rmd_amount = current_balance / RMD_FACTORS[projection_age]
+            rmd_projections[projection_age] = {
+                'balance': current_balance,
+                'rmd_amount': rmd_amount,
+                'factor': RMD_FACTORS[projection_age]
+            }
+            current_balance = (current_balance - rmd_amount) * 1.07  # Assuming 7% growth
+    
+    return rmd_projections
 
-def calculate_rmd(age: int, balance: float) -> float:
-    """Calculate Required Minimum Distribution"""
-    try:
-        if age < 73:
-            return 0
-        distribution_periods = {
-            73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7,
-            77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2
-        }
-        period = distribution_periods.get(age, 20.2)
-        return balance / period
-    except Exception as e:
-        st.error(f"Error calculating RMD: {str(e)}")
-        return 0
+def analyze_tax_implications(
+    traditional_contributions: float,
+    roth_contributions: float,
+    current_tax_rate: float,
+    estimated_retirement_tax_rate: float
+) -> Dict:
+    """Analyze tax implications of Traditional vs Roth contributions"""
+    current_tax_savings = traditional_contributions * current_tax_rate
+    retirement_tax_cost = traditional_contributions * estimated_retirement_tax_rate
+    roth_current_tax_cost = roth_contributions * current_tax_rate
+    
+    return {
+        'current_tax_savings': current_tax_savings,
+        'retirement_tax_cost': retirement_tax_cost,
+        'roth_current_tax_cost': roth_current_tax_cost,
+        'tax_difference': current_tax_savings - retirement_tax_cost
+    }
 
-def calculate_tax_implications(salary: float, filing_status: str, contributions: Dict) -> Dict:
-    """Calculate tax implications of TSP contributions"""
-    try:
-        from constants import TAX_BRACKETS
-        marginal_rate = next((bracket['rate'] for bracket in TAX_BRACKETS 
-                            if salary <= bracket[filing_status]), 0.37)
-        
-        return {
-            'traditional_savings': contributions['traditional'] * marginal_rate,
-            'roth_tax_paid': contributions['roth'],
-            'projected_rmd': calculate_rmd(73, contributions['traditional_balance']),
-            'projected_tax_rate': marginal_rate
-        }
-    except Exception as e:
-        st.error(f"Error calculating tax implications: {str(e)}")
-        return {}
+def get_risk_profile_recommendation(age: int, years_to_retirement: int) -> str:
+    """Recommend a risk profile based on age and years to retirement"""
+    if years_to_retirement < 5:
+        return 'Conservative'
+    elif years_to_retirement < 15:
+        return 'Moderate'
+    else:
+        return 'Aggressive'
