@@ -12,16 +12,117 @@ from utils import (
     handle_tax_planning_tab,
     handle_retirement_projections_tab
 )
-from config import CURRENT_USER, CURRENT_TIMESTAMP
+from config import (
+    CURRENT_USER, 
+    CURRENT_TIMESTAMP, 
+    COMPANY_NAME, 
+    COMPANY_FOOTER,
+    APP_VERSION
+)
 from constants import RISK_PROFILES, FUND_PERFORMANCE
 
-# Page configuration
+# Custom CSS for styling
 st.set_page_config(
     page_title="Federal TSP Calculator",
     page_icon="💰",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Custom CSS for footer
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #f0f2f6;
+        color: #31333F;
+        text-align: center;
+        padding: 10px;
+        font-size: 14px;
+    }
+    .header-info {
+        background-color: #f0f2f6;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+    .user-info {
+        float: right;
+        padding: 5px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+def show_header_info():
+    """Display header with current user and timestamp information"""
+    header_html = f"""
+    <div class="header-info">
+        <span>🕒 2025-01-29 22:54:08 UTC</span>
+        <span class="user-info">👤 User: AvaJ845</span>
+    </div>
+    """
+    st.markdown(header_html, unsafe_allow_html=True)
+
+def show_footer():
+    """Display footer with company information"""
+    footer_html = f"""
+    <div class="footer">
+        <span>{COMPANY_FOOTER}</span>
+        <span style="margin-left: 20px;">Version {APP_VERSION}</span>
+    </div>
+    """
+    st.markdown(footer_html, unsafe_allow_html=True)
+
+def main():
+    try:
+        # Show header information
+        show_header_info()
+        
+        st.title("Enhanced Federal TSP Calculator")
+        
+        # Show how to use section
+        show_how_to_use()
+        
+        # Show educational section
+        show_education_section()
+        
+        # Risk tolerance selector in sidebar
+        risk_profile = show_risk_tolerance_selector()
+        
+        # Initialize session state
+        initialize_session_state()
+        
+        # Create main tabs
+        tabs = st.tabs([
+            "Personal Info",
+            "Contributions",
+            "Fund Analysis",
+            "Tax Planning",
+            "Retirement Projections"
+        ])
+        
+        # Handle each tab
+        with tabs[0]: handle_personal_info_tab()
+        with tabs[1]: handle_contributions_tab()
+        with tabs[2]: handle_fund_analysis_tab(risk_profile)
+        with tabs[3]: handle_tax_planning_tab()
+        with tabs[4]: handle_retirement_projections_tab()
+        
+        # Add footer
+        show_footer()
+        
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
+        st.error("Please try refreshing the page or contact support if the error persists.")
+        st.exception(e)
 
 def show_how_to_use():
     """Display instructions on how to use the TSP calculator"""
@@ -64,126 +165,7 @@ def show_how_to_use():
             * View retirement income scenarios
             * Check Monte Carlo simulation results
             * Adjust variables to see different outcomes
-        
-        ### Tips for Best Results
-        1. **Keep Information Updated**: Regularly update your salary and contributions
-        2. **Review Risk Tolerance**: Reassess your risk profile annually
-        3. **Check Tax Implications**: Consider tax brackets when choosing Traditional vs. Roth
-        4. **Monitor Performance**: Review fund performance quarterly
-        
-        ### Need Help?
-        - Use the '?' icons next to inputs for detailed explanations
-        - Check the educational section for in-depth TSP information
-        - Contact your agency's TSP coordinator for specific questions
         """)
-
-def show_education_section():
-    """Enhanced educational information about the TSP calculator"""
-    with st.expander("📚 Learn About TSP Calculator", expanded=False):
-        st.markdown("""
-        ### What is TSP?
-        The Thrift Savings Plan (TSP) is a retirement savings and investment plan for Federal employees and uniformed services members.
-        
-        ### Investment Approaches:
-        1. **Conservative (Low Risk)**
-           - Higher allocation to G and F Funds
-           - Suitable for near-retirement or risk-averse investors
-           - Typical returns: 2-4% annually
-        
-        2. **Moderate (Balanced Risk)**
-           - Balanced mix of all funds
-           - Suitable for mid-career professionals
-           - Typical returns: 5-8% annually
-        
-        3. **Aggressive (Higher Risk)**
-           - Higher allocation to C, S, and I Funds
-           - Suitable for young investors with long horizons
-           - Potential returns: 8-12% annually
-        
-        ### Tax Implications:
-        - **Traditional TSP**: Contributions reduce current taxable income
-        - **Roth TSP**: After-tax contributions, tax-free withdrawals
-        - **RMD Considerations**: Required starting at age 73
-        
-        ### Historical Performance Analysis:
-        - Past performance tracking since inception
-        - Risk-adjusted return metrics
-        - Volatility analysis
-        
-        ### Retirement Income Projections:
-        - Monte Carlo simulations
-        - Multiple scenario analysis
-        - Inflation-adjusted projections
-        """)
-
-def show_risk_tolerance_selector():
-    """Allow users to select their investment approach based on risk tolerance"""
-    risk_profile = st.sidebar.selectbox(
-        "Select Your Risk Tolerance",
-        list(RISK_PROFILES.keys()),
-        help="Choose your investment approach based on your risk tolerance"
-    )
-    
-    # Display allocation from RISK_PROFILES constant
-    st.sidebar.markdown(f"📊 **{risk_profile} Portfolio**")
-    st.sidebar.markdown(RISK_PROFILES[risk_profile]['description'])
-    
-    allocations = RISK_PROFILES[risk_profile]['allocations']
-    for fund, allocation in allocations.items():
-        st.sidebar.markdown(f"- {fund}: {allocation}%")
-    
-    return risk_profile
-
-def main():
-    try:
-        st.title("Enhanced Federal TSP Calculator")
-        st.caption(f"Current User: {CURRENT_USER} | Last Updated: 2025-01-29 22:46:10")
-        
-        # Show how to use section first
-        show_how_to_use()
-        
-        # Show educational section
-        show_education_section()
-        
-        # Risk tolerance selector in sidebar
-        risk_profile = show_risk_tolerance_selector()
-        
-        # Initialize session state
-        initialize_session_state()
-        
-        # Create main tabs
-        tabs = st.tabs([
-            "Personal Info",
-            "Contributions",
-            "Fund Analysis",
-            "Tax Planning",
-            "Retirement Projections"
-        ])
-        
-        # Handle each tab
-        with tabs[0]: 
-            handle_personal_info_tab()
-        
-        with tabs[1]: 
-            handle_contributions_tab()
-        
-        with tabs[2]: 
-            handle_fund_analysis_tab(risk_profile)
-        
-        with tabs[3]: 
-            handle_tax_planning_tab()
-        
-        with tabs[4]: 
-            handle_retirement_projections_tab()
-        
-        # Add footer
-        st.markdown("---")
-        st.caption(f"Data last refreshed: 2025-01-29 22:46:10 UTC")
-        
-    except Exception as e:
-        st.error(f"An error occurred: {str(e)}")
-        st.error("Please try refreshing the page or contact support if the error persists.")
-        st.exception(e)
 
 if __name__ == "__main__":
     main()
