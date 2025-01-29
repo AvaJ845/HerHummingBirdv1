@@ -1,141 +1,140 @@
-#appy.py
+#app.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 from datetime import datetime
 import plotly.graph_objects as go
-from utils import (
-    calculate_retirement_age,
-    calculate_rmd,
-    calculate_tax_implications,
-    validate_inputs,
-    mask_sensitive_data
-)
-from constants import (
-    CURRENT_YEAR,
-    ANNUAL_LIMIT,
-    CATCH_UP_LIMIT,
-    FUND_PERFORMANCE,
-    TAX_BRACKETS
-)
+from utils import *
+from constants import *
+from investment_strategies import *
+from tax_calculator import *
+from retirement_projections import *
 
 # Page configuration
 st.set_page_config(
     page_title="Federal TSP Calculator",
     page_icon="💰",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 def show_education_section():
-    """Display educational information about the TSP calculator"""
+    """Enhanced educational information about the TSP calculator"""
     with st.expander("📚 Learn About TSP Calculator", expanded=True):
         st.markdown("""
         ### What is TSP?
-        The Thrift Savings Plan (TSP) is a retirement savings and investment plan for Federal employees and members of the uniformed services.
+        The Thrift Savings Plan (TSP) is a retirement savings and investment plan for Federal employees and uniformed services members.
         
-        ### Key Features:
-        - **Traditional & Roth Contributions**: Choose between pre-tax or after-tax contributions
-        - **Agency Matching**: Government matches up to 5% of your contributions
-        - **Multiple Fund Options**: Diverse investment choices from G Fund to Lifecycle Funds
+        ### Investment Approaches:
+        1. **Conservative (Low Risk)**
+           - Higher allocation to G and F Funds
+           - Suitable for near-retirement or risk-averse investors
+           - Typical returns: 2-4% annually
         
-        ### How to Use This Calculator:
-        1. Enter your personal information
-        2. Set your contribution preferences
-        3. Choose your fund allocations
-        4. Review retirement projections
+        2. **Moderate (Balanced Risk)**
+           - Balanced mix of all funds
+           - Suitable for mid-career professionals
+           - Typical returns: 5-8% annually
         
-        ### Security Features:
-        - All sensitive inputs are masked
-        - Data is not stored permanently
-        - Secure input validation
+        3. **Aggressive (Higher Risk)**
+           - Higher allocation to C, S, and I Funds
+           - Suitable for young investors with long horizons
+           - Potential returns: 8-12% annually
+        
+        ### Tax Implications:
+        - **Traditional TSP**: Contributions reduce current taxable income
+        - **Roth TSP**: After-tax contributions, tax-free withdrawals
+        - **RMD Considerations**: Required starting at age 73
+        
+        ### Historical Performance Analysis:
+        - Past performance tracking since inception
+        - Risk-adjusted return metrics
+        - Volatility analysis
+        
+        ### Retirement Income Projections:
+        - Monte Carlo simulations
+        - Multiple scenario analysis
+        - Inflation-adjusted projections
         """)
 
-def main():
-    st.title("Federal TSP Calculator")
+def show_risk_tolerance_selector():
+    """Allow users to select their investment approach based on risk tolerance"""
+    risk_profile = st.sidebar.selectbox(
+        "Select Your Risk Tolerance",
+        ["Conservative", "Moderate", "Aggressive"],
+        help="Choose your investment approach based on your risk tolerance"
+    )
     
-    # Show educational section at the top
+    if risk_profile == "Conservative":
+        st.sidebar.markdown("""
+        📊 **Conservative Allocation**:
+        - G Fund: 40%
+        - F Fund: 30%
+        - C Fund: 20%
+        - S Fund: 5%
+        - I Fund: 5%
+        """)
+    elif risk_profile == "Moderate":
+        st.sidebar.markdown("""
+        📊 **Moderate Allocation**:
+        - G Fund: 20%
+        - F Fund: 20%
+        - C Fund: 30%
+        - S Fund: 15%
+        - I Fund: 15%
+        """)
+    else:
+        st.sidebar.markdown("""
+        📊 **Aggressive Allocation**:
+        - G Fund: 5%
+        - F Fund: 10%
+        - C Fund: 45%
+        - S Fund: 20%
+        - I Fund: 20%
+        """)
+    
+    return risk_profile
+
+def main():
+    st.title("Enhanced Federal TSP Calculator")
+    
+    # Show educational section
     show_education_section()
     
-    # Initialize session state
-    if 'personal_info' not in st.session_state:
-        st.session_state.personal_info = {
-            'age': '',
-            'salary': '',
-            'years_of_service': '',
-            'retirement_system': 'FERS',
-            'is_special_category': False,
-            'state_of_residence': '',
-            'tax_bracket': '',
-            'filing_status': 'single'
-        }
+    # Risk tolerance selector in sidebar
+    risk_profile = show_risk_tolerance_selector()
     
-    # Create tabs
-    tabs = st.tabs(["Personal Info", "Contributions", "Fund Analysis", "Retirement"])
+    # Initialize session state
+    initialize_session_state()
+    
+    # Create main tabs
+    tabs = st.tabs([
+        "Personal Info",
+        "Contributions",
+        "Fund Analysis",
+        "Tax Planning",
+        "Retirement Projections"
+    ])
     
     # Personal Information Tab
     with tabs[0]:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.subheader("Basic Information")
-            try:
-                # Masked input fields
-                age = st.number_input(
-                    "Age",
-                    min_value=18,
-                    max_value=100,
-                    value=int(st.session_state.personal_info['age']) if st.session_state.personal_info['age'] else 18,
-                    help="Enter your current age"
-                )
-                
-                salary = st.text_input(
-                    "Annual Salary",
-                    type="password",
-                    value=st.session_state.personal_info['salary'],
-                    help="Enter your annual salary"
-                )
-                
-                years_of_service = st.number_input(
-                    "Years of Service",
-                    min_value=0,
-                    max_value=60,
-                    value=int(st.session_state.personal_info['years_of_service']) if st.session_state.personal_info['years_of_service'] else 0,
-                    help="Enter your years of federal service"
-                )
-                
-                # Validate inputs
-                if salary:
-                    try:
-                        salary = float(mask_sensitive_data(salary))
-                        if salary < 0:
-                            st.error("Salary cannot be negative")
-                    except ValueError:
-                        st.error("Please enter a valid salary amount")
-                
-            except Exception as e:
-                st.error(f"An error occurred: {str(e)}")
-                
-        with col2:
-            st.subheader("Retirement System")
-            retirement_system = st.selectbox(
-                "System",
-                options=["FERS", "CSRS"],
-                index=0 if st.session_state.personal_info['retirement_system'] == 'FERS' else 1
-            )
-            
-            is_special_category = st.checkbox(
-                "Special Category Employee",
-                value=st.session_state.personal_info['is_special_category'],
-                help="Check if you are a law enforcement officer, firefighter, or air traffic controller"
-            )
-
-    # Update session state
-    st.session_state.personal_info.update({
-        'age': age,
-        'salary': salary,
-        'years_of_service': years_of_service,
-        'retirement_system': retirement_system,
-        'is_special_category': is_special_category
-    })
+        handle_personal_info_tab()
+    
+    # Contributions Tab
+    with tabs[1]:
+        handle_contributions_tab()
+    
+    # Fund Analysis Tab
+    with tabs[2]:
+        handle_fund_analysis_tab(risk_profile)
+    
+    # Tax Planning Tab
+    with tabs[3]:
+        handle_tax_planning_tab()
+    
+    # Retirement Projections Tab
+    with tabs[4]:
+        handle_retirement_projections_tab()
 
 if __name__ == "__main__":
     main()
