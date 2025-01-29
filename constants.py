@@ -1,7 +1,7 @@
 #constants.py
 from datetime import datetime
 
-CURRENT_DATE = "2025-01-29 22:15:38"
+CURRENT_TIMESTAMP = "2025-01-29 22:33:05"
 CURRENT_USER = "AvaJ845"
 CURRENT_YEAR = 2025
 ANNUAL_LIMIT = 23000
