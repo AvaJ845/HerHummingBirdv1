@@ -9,6 +9,7 @@ from constants import *
 from investment_strategies import *
 from tax_calculator import *
 from retirement_projections import *
+from config import CURRENT_TIMESTAMP, CURRENT_USER, COMPANY_NAME, COMPANY_FOOTER, APP_VERSION
 
 # Page configuration
 st.set_page_config(
@@ -35,16 +36,6 @@ st.markdown(
         padding: 10px;
         font-size: 14px;
     }
-    .header-info {
-        background-color: #f0f2f6;
-        padding: 10px;
-        border-radius: 5px;
-        margin-bottom: 10px;
-    }
-    .user-info {
-        float: right;
-        padding: 5px;
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -52,13 +43,7 @@ st.markdown(
 
 def show_header_info():
     """Display header with current user and timestamp information"""
-    header_html = f"""
-    <div class="header-info">
-        <span>🕒 2025-01-29 23:17:46 UTC</span>
-        <span class="user-info">👤 User: AvaJ845</span>
-    </div>
-    """
-    st.markdown(header_html, unsafe_allow_html=True)
+    st.caption(f"🕒 2025-01-29 23:34:34 UTC  |  👤 User: AvaJ845")
 
 def show_how_to_use():
     """Display instructions on how to use the TSP calculator"""
@@ -188,9 +173,9 @@ def show_risk_tolerance_selector():
 
 def show_footer():
     """Display footer with copyright information"""
-    footer_html = """
+    footer_html = f"""
     <div class="footer">
-        <p>© 2025 AvaResearch LLC. All rights reserved.</p>
+        <p>{COMPANY_FOOTER}</p>
     </div>
     """
     st.markdown(footer_html, unsafe_allow_html=True)
