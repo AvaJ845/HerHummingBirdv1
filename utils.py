@@ -1,103 +1,148 @@
 #utils.py
+# utils.py
 import streamlit as st
 import pandas as pd
 import numpy as np
-from typing import Dict
-from constants import RISK_PROFILES, FUND_PERFORMANCE, HISTORICAL_PERFORMANCE, RMD_FACTORS
+from datetime import datetime
+import plotly.graph_objects as go
+from constants import CURRENT_USER, CURRENT_TIMESTAMP, FUND_PERFORMANCE, TAX_BRACKETS
 
-def calculate_portfolio_returns(allocations: Dict, investment_amount: float) -> Dict:
-    """Calculate expected returns based on fund allocations"""
-    total_return = 0
-    portfolio_risk = 0
-    
-    for fund, percentage in allocations.items():
-        if percentage > 0:
-            return_rate = FUND_PERFORMANCE[fund]['return'] / 100
-            total_return += (return_rate * percentage / 100)
-            portfolio_risk += (FUND_PERFORMANCE[fund]['volatility'] * percentage / 100)
-    
-    expected_value = investment_amount * (1 + total_return)
-    
-    return {
-        'expected_return': total_return * 100,
-        'portfolio_risk': portfolio_risk,
-        'expected_value': expected_value
-    }
+def initialize_session_state():
+    """Initialize session state with default values"""
+    if 'personal_info' not in st.session_state:
+        st.session_state.personal_info = {
+            'age': '',
+            'salary': '',
+            'years_of_service': '',
+            'retirement_system': 'FERS',
+            'is_special_category': False,
+            'state_of_residence': '',
+            'tax_bracket': '',
+            'filing_status': 'single'
+        }
 
-def project_retirement_income(
-    current_balance: float,
-    monthly_contribution: float,
-    years_to_retirement: int,
-    risk_profile: str
-) -> Dict:
-    """Project retirement income based on contributions and risk profile"""
-    allocations = RISK_PROFILES[risk_profile]['allocations']
-    annual_return = sum(FUND_PERFORMANCE[fund]['return'] * (alloc/100) 
-                       for fund, alloc in allocations.items())
+def handle_personal_info_tab():
+    """Handle the personal information tab content"""
+    col1, col2 = st.columns(2)
     
-    # Monthly calculations
-    months = years_to_retirement * 12
-    monthly_return = (1 + annual_return/100)**(1/12) - 1
-    
-    # Future Value calculation with monthly contributions
-    future_value = current_balance * (1 + monthly_return)**months
-    future_value += monthly_contribution * (((1 + monthly_return)**months - 1) / monthly_return)
-    
-    # Calculate estimated monthly retirement income (4% rule)
-    monthly_retirement_income = future_value * 0.04 / 12
-    
-    return {
-        'projected_balance': future_value,
-        'monthly_retirement_income': monthly_retirement_income,
-        'annual_return_rate': annual_return
-    }
+    with col1:
+        st.subheader("Basic Information")
+        age = st.number_input("Age", min_value=18, max_value=100, 
+                            value=30 if not st.session_state.personal_info['age'] else 
+                            int(st.session_state.personal_info['age']))
+        
+        salary = st.number_input("Annual Salary ($)", min_value=0, max_value=1000000,
+                               value=50000 if not st.session_state.personal_info['salary'] else 
+                               int(st.session_state.personal_info['salary']))
+        
+        years_of_service = st.number_input("Years of Service", min_value=0, max_value=60,
+                                         value=0 if not st.session_state.personal_info['years_of_service'] else 
+                                         int(st.session_state.personal_info['years_of_service']))
 
-def calculate_detailed_rmd(age: int, traditional_balance: float) -> Dict:
-    """Calculate detailed RMD projections"""
-    if age < 72:
-        years_to_rmd = 72 - age
-        projected_balance = traditional_balance * (1.07 ** years_to_rmd)  # Assuming 7% annual growth
-    else:
-        projected_balance = traditional_balance
-    
-    rmd_projections = {}
-    current_balance = projected_balance
-    
-    for projection_age in range(max(72, age), 101):
-        if projection_age in RMD_FACTORS:
-            rmd_amount = current_balance / RMD_FACTORS[projection_age]
-            rmd_projections[projection_age] = {
-                'balance': current_balance,
-                'rmd_amount': rmd_amount,
-                'factor': RMD_FACTORS[projection_age]
-            }
-            current_balance = (current_balance - rmd_amount) * 1.07  # Assuming 7% growth
-    
-    return rmd_projections
+    with col2:
+        st.subheader("Retirement System")
+        retirement_system = st.selectbox("System", ["FERS", "CSRS"])
+        is_special_category = st.checkbox("Special Category Employee")
+        filing_status = st.selectbox("Filing Status", ["single", "married"])
 
-def analyze_tax_implications(
-    traditional_contributions: float,
-    roth_contributions: float,
-    current_tax_rate: float,
-    estimated_retirement_tax_rate: float
-) -> Dict:
-    """Analyze tax implications of Traditional vs Roth contributions"""
-    current_tax_savings = traditional_contributions * current_tax_rate
-    retirement_tax_cost = traditional_contributions * estimated_retirement_tax_rate
-    roth_current_tax_cost = roth_contributions * current_tax_rate
-    
-    return {
-        'current_tax_savings': current_tax_savings,
-        'retirement_tax_cost': retirement_tax_cost,
-        'roth_current_tax_cost': roth_current_tax_cost,
-        'tax_difference': current_tax_savings - retirement_tax_cost
-    }
+    # Update session state
+    st.session_state.personal_info.update({
+        'age': age,
+        'salary': salary,
+        'years_of_service': years_of_service,
+        'retirement_system': retirement_system,
+        'is_special_category': is_special_category,
+        'filing_status': filing_status
+    })
 
-def get_risk_profile_recommendation(age: int, years_to_retirement: int) -> str:
-    """Recommend a risk profile based on age and years to retirement"""
-    if years_to_retirement < 5:
-        return 'Conservative'
-    elif years_to_retirement < 15:
-        return 'Moderate'
-    else:
-        return 'Aggressive'
+def handle_contributions_tab():
+    """Handle the contributions tab content"""
+    st.subheader("TSP Contributions")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        traditional_contrib = st.number_input(
+            "Traditional TSP Contribution (%)",
+            min_value=0,
+            max_value=100,
+            value=5
+        )
+        
+        roth_contrib = st.number_input(
+            "Roth TSP Contribution (%)",
+            min_value=0,
+            max_value=100,
+            value=0
+        )
+        
+    with col2:
+        salary = st.session_state.personal_info.get('salary', 0)
+        total_contrib_percent = traditional_contrib + roth_contrib
+        
+        if total_contrib_percent > 100:
+            st.error("Total contributions cannot exceed 100%")
+        else:
+            traditional_amount = (salary * traditional_contrib / 100)
+            roth_amount = (salary * roth_contrib / 100)
+            
+            st.write(f"Traditional Contribution: ${traditional_amount:,.2f}")
+            st.write(f"Roth Contribution: ${roth_amount:,.2f}")
+            st.write(f"Total Contribution: ${(traditional_amount + roth_amount):,.2f}")
+
+def handle_fund_analysis_tab(risk_profile):
+    """Handle the fund analysis tab content"""
+    st.subheader("Fund Analysis")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("### Current Allocation")
+        fig = go.Figure(data=[go.Pie(
+            labels=list(FUND_PERFORMANCE.keys()),
+            values=[FUND_PERFORMANCE[fund]['return'] for fund in FUND_PERFORMANCE.keys()]
+        )])
+        st.plotly_chart(fig)
+        
+    with col2:
+        st.write("### Fund Performance")
+        df = pd.DataFrame(FUND_PERFORMANCE).transpose()
+        st.dataframe(df)
+
+def handle_tax_planning_tab():
+    """Handle the tax planning tab content"""
+    st.subheader("Tax Planning")
+    
+    salary = st.session_state.personal_info.get('salary', 0)
+    filing_status = st.session_state.personal_info.get('filing_status', 'single')
+    
+    # Find applicable tax bracket
+    tax_rate = next((bracket['rate'] for bracket in TAX_BRACKETS 
+                    if salary <= bracket[filing_status]), 0.37)
+    
+    st.write(f"Current Tax Bracket: {tax_rate:.1%}")
+    st.write(f"Estimated Tax Savings on Traditional Contributions: "
+            f"${(salary * tax_rate):,.2f}")
+
+def handle_retirement_projections_tab():
+    """Handle the retirement projections tab content"""
+    st.subheader("Retirement Projections")
+    
+    # Get current age and retirement age
+    current_age = st.session_state.personal_info.get('age', 30)
+    retirement_age = st.number_input("Expected Retirement Age", 
+                                   min_value=current_age,
+                                   max_value=100,
+                                   value=min(current_age + 30, 65))
+    
+    # Simple projection
+    years_to_retirement = retirement_age - current_age
+    current_salary = st.session_state.personal_info.get('salary', 50000)
+    
+    conservative_growth = current_salary * (1.03 ** years_to_retirement)
+    moderate_growth = current_salary * (1.06 ** years_to_retirement)
+    aggressive_growth = current_salary * (1.09 ** years_to_retirement)
+    
+    st.write("### Projected Retirement Account Balance")
+    st.write(f"Conservative Estimate: ${conservative_growth:,.2f}")
+    st.write(f"Moderate Estimate: ${moderate_growth:,.2f}")
+    st.write(f"Aggressive Estimate: ${aggressive_growth:,.2f}")
