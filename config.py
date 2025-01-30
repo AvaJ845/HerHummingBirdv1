@@ -1,7 +1,7 @@
 #config.py
-# Current timestamp and user information
+# Current timestamp
 CURRENT_TIMESTAMP = "2025-01-29 23:27:58"  # UTC time in YYYY-MM-DD HH:MM:SS format
-CURRENT_USER = "AvaJ845"
+
 
 # Company information
 COMPANY_NAME = "AvaResearch LLC"
