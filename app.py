@@ -9,7 +9,7 @@ from constants import *
 from investment_strategies import *
 from tax_calculator import *
 from retirement_projections import *
-from config import CURRENT_TIMESTAMP, CURRENT_USER, COMPANY_NAME, COMPANY_FOOTER, APP_VERSION
+from config import CURRENT_TIMESTAMP,COMPANY_NAME, COMPANY_FOOTER, APP_VERSION
 
 # Page configuration
 st.set_page_config(
@@ -42,8 +42,8 @@ st.markdown(
 )
 
 def show_header_info():
-    """Display header with current user and timestamp information"""
-    st.caption(f"🕒 2025-01-29 23:34:34 UTC  |  👤 User: AvaJ845")
+    """Display header with timestamp information"""
+    st.caption(f"🕒 2025-01-29 23:34:34 UTC")
 
 def show_how_to_use():
     """Display instructions on how to use the TSP calculator"""
